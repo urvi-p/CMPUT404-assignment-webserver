@@ -1,5 +1,4 @@
 #  coding: utf-8 
-import re
 import socketserver
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos, Urvi Patel
