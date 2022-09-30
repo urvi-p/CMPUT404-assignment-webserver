@@ -31,8 +31,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK\r\n",'utf-8'))
+        # print ("Got a request of: %s\n" % self.data)
+        # self.request.sendall(bytearray("OK\r\n",'utf-8'))
 
         # get input data and separate it
         split_data = self.data.decode().split("\r\n")
@@ -43,63 +43,71 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # check request type
         if request_type == "GET":
             # check for valid file paths
-
             if file_path[:3] == "/..":
                 # check if trying to access files above current directory
                 response_text = "HTTP/1.1 404 Not Found\r\n"
-
             elif file_path[-1] == "/":
-                # go to index.html
-                file_name = "./www"+file_path+"index.html"
-                try:
-                    content = self.getContent(file_name)
-                    response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}".format(content)
-                except:
-                    response_text = "HTTP/1.1 404 Not Found\r\n"
-
+                response_text = self.getIndex(file_path)
             elif file_path[-5:] == ".html":
-                # open html file
-                file_name = "./www"+file_path
-                try:
-                    content = self.getContent(file_name)
-                    response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}".format(content)
-                except:
-                    response_text = "HTTP/1.1 404 Not Found\r\n"
-
+                 response_text = self.getHTML(file_path)
             elif file_path[-4:] == ".css":
-                # open css file
-                file_name = "./www"+file_path
-                try:
-                    content = self.getContent(file_name)
-                    response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n{}".format(content)
-                except:
-                    response_text = "HTTP/1.1 404 Not Found\r\n"
-
+                response_text = self.getCSS(file_path)
             else:
-                # invalid path, 301 error and redirect
-                file_name = "./www"+file_path+"/index.html"
-                try:
-                    content = self.getContent(file_name)
-                    response_text = "HTTP/1.1 301 Moved Permanently\r\nLocation: {}\r\n".format(file_path+"/")
-                except:
-                    response_text = "HTTP/1.1 404 Not Found\r\n"
-
+                response_text = self.redirectToIndex(file_path)
         else:
             # invalid method, 405 Error
-            response_text = "HTTP/1.1 405 Method Not Allowed"
+            response_text = "HTTP/1.1 405 Method Not Allowed\r\n"
 
         # send status codes and content
         self.request.sendall(bytearray(response_text, 'utf-8'))
         return
+
+    def getIndex(self, file_path):
+        # go to index.html
+        file_name = "./www"+file_path+"index.html"
+        try:
+            content = self.getContent(file_name)
+            response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}".format(content)
+        except:
+            response_text = "HTTP/1.1 404 Not Found\r\n"
+        return(response_text)
+
+    def getHTML(self, file_path):
+        # open html file
+        file_name = "./www"+file_path
+        try:
+            content = self.getContent(file_name)
+            response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n{}".format(content)
+        except:
+            response_text = "HTTP/1.1 404 Not Found\r\n"
+        return(response_text)
+
+    def getCSS(self, file_path):
+        # open css file
+        file_name = "./www"+file_path
+        try:
+            content = self.getContent(file_name)
+            response_text = "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n{}".format(content)
+        except:
+            response_text = "HTTP/1.1 404 Not Found\r\n"
+        return(response_text)
+
+    def redirectToIndex(self, file_path):
+        # invalid path, 301 error and redirect
+        file_name = "./www"+file_path+"/index.html"
+        try:
+            content = self.getContent(file_name)
+            response_text = "HTTP/1.1 301 Moved Permanently\r\nLocation: {}\r\n".format(file_path+"/")
+        except:
+            response_text = "HTTP/1.1 404 Not Found\r\n"
+        return(response_text)
 
     def getContent(self, name):
         # get file contents
         f = open(name, "r")
         content = f.read()
         f.close()
-
         return content
-
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
